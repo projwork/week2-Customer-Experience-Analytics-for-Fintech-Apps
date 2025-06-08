@@ -1,0 +1,11 @@
+2025-06-08 16:37:44,324 - INFO - Created data/processed directory
+2025-06-08 16:37:44,325 - INFO - Found latest file for CBE: data\CBE_reviews_20250608_154443.csv
+2025-06-08 16:37:44,325 - INFO - Found latest file for BOA: data\BOA_reviews_20250608_154451.csv
+2025-06-08 16:37:44,326 - INFO - Found latest file for Dashen_Bank: data\Dashen_Bank_reviews_20250608_154436.csv
+2025-06-08 16:37:44,332 - INFO - Loaded 1000 reviews for CBE
+2025-06-08 16:37:44,338 - INFO - Loaded 1000 reviews for BOA
+2025-06-08 16:37:44,342 - INFO - Loaded 449 reviews for Dashen_Bank
+2025-06-08 16:37:44,343 - INFO - Combined data: 2449 total reviews
+2025-06-08 16:37:44,378 - INFO - Removed 531 duplicate reviews (21.7%)
+2025-06-08 16:37:44,384 - INFO - Removed 0 rows due to missing critical data
+2025-06-08 16:37:44,413 - INFO - Saved processed data to data/processed/cleaned_banking_reviews.csv
