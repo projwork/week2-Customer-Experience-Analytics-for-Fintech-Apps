@@ -113,14 +113,14 @@ class AnalysisPipeline:
             
             # Store data info
             self.results['data_info'] = {
-                'total_reviews': len(df),
-                'banks': df['bank'].nunique(),
-                'bank_distribution': df['bank'].value_counts().to_dict(),
+                'total_reviews': int(len(df)),
+                'banks': int(df['bank'].nunique()),
+                'bank_distribution': {str(k): int(v) for k, v in df['bank'].value_counts().to_dict().items()},
                 'date_range': {
-                    'min': df['date'].min(),
-                    'max': df['date'].max()
+                    'min': str(df['date'].min()),
+                    'max': str(df['date'].max())
                 },
-                'rating_distribution': df['rating'].value_counts().sort_index().to_dict()
+                'rating_distribution': {str(k): int(v) for k, v in df['rating'].value_counts().sort_index().to_dict().items()}
             }
             
             return df
@@ -159,17 +159,17 @@ class AnalysisPipeline:
             # Calculate aggregations
             aggregations = calculate_sentiment_aggregations(sentiment_df)
             
-            # Store results
+            # Store results (ensure all data is JSON-safe)
             self.results['sentiment_results'] = {
-                'total_analyzed': len(sentiment_df),
-                'sentiment_coverage': aggregations['overall']['sentiment_coverage'],
+                'total_analyzed': int(len(sentiment_df)),
+                'sentiment_coverage': float(aggregations['overall']['sentiment_coverage']),
                 'overall_distribution': {
-                    'positive': aggregations['overall']['positive_ratio'],
-                    'negative': aggregations['overall']['negative_ratio'],
-                    'neutral': aggregations['overall']['neutral_ratio']
+                    'positive': float(aggregations['overall']['positive_ratio']),
+                    'negative': float(aggregations['overall']['negative_ratio']),
+                    'neutral': float(aggregations['overall']['neutral_ratio'])
                 },
-                'by_bank': aggregations['by_bank'],
-                'by_rating': aggregations['by_rating']
+                'by_bank': self._convert_to_json_safe(aggregations['by_bank']),
+                'by_rating': self._convert_to_json_safe(aggregations['by_rating'])
             }
             
             logger.info(f"✅ Sentiment analysis completed for {len(sentiment_df)} reviews")
@@ -212,17 +212,17 @@ class AnalysisPipeline:
             # Generate summary
             summary = generate_thematic_summary(thematic_results)
             
-            # Store results
-            self.results['thematic_results'] = {
-                'total_analyzed': summary['overall_statistics']['total_reviews_analyzed'],
-                'themes_identified': summary['overall_statistics']['unique_themes_identified'],
-                'themes_per_bank': summary['overall_statistics']['themes_per_bank_avg'],
+            # Store results (ensure all data is JSON-safe)
+            self.results['thematic_results'] = self._convert_to_json_safe({
+                'total_analyzed': int(summary['overall_statistics']['total_reviews_analyzed']),
+                'themes_identified': int(summary['overall_statistics']['unique_themes_identified']),
+                'themes_per_bank': float(summary['overall_statistics']['themes_per_bank_avg']),
                 'bank_top_themes': {
-                    bank: stats['top_theme'] 
+                    str(bank): str(stats['top_theme']) 
                     for bank, stats in summary['bank_comparisons'].items()
                 },
-                'overall_theme_ranking': summary['theme_insights']
-            }
+                'overall_theme_ranking': {str(k): int(v) for k, v in summary['theme_insights'].items()}
+            })
             
             logger.info(f"✅ Thematic analysis completed")
             logger.info(f"🎯 Identified {summary['overall_statistics']['unique_themes_identified']} unique themes")
@@ -261,7 +261,7 @@ class AnalysisPipeline:
             # Calculate cross-analysis metrics
             cross_metrics = self._calculate_cross_analysis_metrics(combined_df)
             
-            self.results['combined_results'] = cross_metrics
+            self.results['combined_results'] = self._convert_to_json_safe(cross_metrics)
             
             logger.info(f"✅ Combined {len(combined_df)} reviews with sentiment and theme data")
             
@@ -315,34 +315,83 @@ class AnalysisPipeline:
         Returns:
             dict: Cross-analysis metrics
         """
+        def make_json_safe(obj):
+            """Convert any numpy/pandas types to JSON-safe types"""
+            if hasattr(obj, 'dtype'):  # numpy types
+                if 'int' in str(obj.dtype):
+                    return int(obj)
+                elif 'float' in str(obj.dtype):
+                    return float(obj)
+                else:
+                    return str(obj)
+            elif isinstance(obj, tuple):
+                return str(obj)  # Convert tuples to strings
+            else:
+                return obj
+        
         metrics = {}
         
         # Sentiment distribution by theme
         sentiment_by_theme = combined_df.groupby('primary_theme')['ensemble_label'].value_counts(normalize=True)
-        metrics['sentiment_by_theme'] = sentiment_by_theme.to_dict()
+        metrics['sentiment_by_theme'] = {
+            make_json_safe(k): make_json_safe(v) 
+            for k, v in sentiment_by_theme.to_dict().items()
+        }
         
         # Theme distribution by sentiment
         theme_by_sentiment = combined_df.groupby('ensemble_label')['primary_theme'].value_counts(normalize=True)
-        metrics['theme_by_sentiment'] = theme_by_sentiment.to_dict()
+        metrics['theme_by_sentiment'] = {
+            make_json_safe(k): make_json_safe(v) 
+            for k, v in theme_by_sentiment.to_dict().items()
+        }
         
         # Alignment metrics
-        metrics['average_alignment'] = combined_df['sentiment_theme_alignment'].mean()
-        metrics['high_alignment_percentage'] = (combined_df['sentiment_theme_alignment'] > 0.7).mean() * 100
+        metrics['average_alignment'] = float(combined_df['sentiment_theme_alignment'].mean())
+        metrics['high_alignment_percentage'] = float((combined_df['sentiment_theme_alignment'] > 0.7).mean() * 100)
         
         # Bank-specific insights
         bank_insights = {}
         for bank in combined_df['bank'].unique():
             bank_data = combined_df[combined_df['bank'] == bank]
-            bank_insights[bank] = {
-                'dominant_sentiment': bank_data['ensemble_label'].value_counts().index[0],
-                'dominant_theme': bank_data['primary_theme'].value_counts().index[0],
-                'avg_alignment': bank_data['sentiment_theme_alignment'].mean(),
-                'total_reviews': len(bank_data)
+            bank_insights[str(bank)] = {
+                'dominant_sentiment': str(bank_data['ensemble_label'].value_counts().index[0]),
+                'dominant_theme': str(bank_data['primary_theme'].value_counts().index[0]),
+                'avg_alignment': float(bank_data['sentiment_theme_alignment'].mean()),
+                'total_reviews': int(len(bank_data))
             }
         
         metrics['bank_insights'] = bank_insights
         
         return metrics
+    
+    def _convert_to_json_safe(self, obj):
+        """
+        Recursively convert all numpy/pandas types to JSON-safe types
+        
+        Args:
+            obj: Object to convert (dict, list, or primitive)
+            
+        Returns:
+            JSON-safe version of the object
+        """
+        if hasattr(obj, 'dtype'):  # numpy types
+            if 'int' in str(obj.dtype):
+                return int(obj)
+            elif 'float' in str(obj.dtype):
+                return float(obj)
+            else:
+                return str(obj)
+        elif isinstance(obj, dict):
+            return {
+                str(k): self._convert_to_json_safe(v) 
+                for k, v in obj.items()
+            }
+        elif isinstance(obj, (list, tuple)):
+            return [self._convert_to_json_safe(item) for item in obj]
+        elif isinstance(obj, (int, float, str, bool)) or obj is None:
+            return obj
+        else:
+            return str(obj)  # Convert any other types to string
     
     def calculate_quality_metrics(self, sentiment_df, theme_df, combined_df):
         """
@@ -368,12 +417,12 @@ class AnalysisPipeline:
         combination_success_rate = successful_combinations / len(combined_df) * 100
         
         self.results['quality_metrics'] = {
-            'sentiment_coverage_pct': sentiment_coverage,
-            'sentiment_avg_confidence': sentiment_confidence,
-            'theme_coverage_pct': theme_coverage,
-            'avg_themes_per_review': avg_themes_per_review,
-            'combination_success_rate_pct': combination_success_rate,
-            'total_successful_analysis': successful_combinations
+            'sentiment_coverage_pct': float(sentiment_coverage),
+            'sentiment_avg_confidence': float(sentiment_confidence),
+            'theme_coverage_pct': float(theme_coverage),
+            'avg_themes_per_review': float(avg_themes_per_review),
+            'combination_success_rate_pct': float(combination_success_rate),
+            'total_successful_analysis': int(successful_combinations)
         }
         
         logger.info(f"📈 Quality Metrics:")
@@ -404,10 +453,11 @@ class AnalysisPipeline:
         theme_df.to_csv(theme_path, index=False)
         combined_df.to_csv(combined_path, index=False)
         
-        # Save pipeline results as JSON
+        # Save pipeline results as JSON (with comprehensive type conversion)
         results_path = f"{output_dir}/analysis_pipeline_results_{self.timestamp}.json"
+        json_safe_results = self._convert_to_json_safe(self.results)
         with open(results_path, 'w') as f:
-            json.dump(self.results, f, indent=2, default=str)
+            json.dump(json_safe_results, f, indent=2)
         
         logger.info(f"✅ Results saved:")
         logger.info(f"   • Sentiment: {sentiment_path}")
