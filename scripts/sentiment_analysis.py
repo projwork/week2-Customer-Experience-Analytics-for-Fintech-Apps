@@ -339,34 +339,34 @@ def calculate_sentiment_aggregations(sentiment_df):
     
     # Overall statistics
     aggregations['overall'] = {
-        'total_reviews': len(sentiment_df),
-        'sentiment_coverage': (sentiment_df['ensemble_label'] != 'NEUTRAL').mean() * 100,
-        'positive_ratio': (sentiment_df['ensemble_label'] == 'POSITIVE').mean() * 100,
-        'negative_ratio': (sentiment_df['ensemble_label'] == 'NEGATIVE').mean() * 100,
-        'neutral_ratio': (sentiment_df['ensemble_label'] == 'NEUTRAL').mean() * 100
+        'total_reviews': int(len(sentiment_df)),
+        'sentiment_coverage': float((sentiment_df['ensemble_label'] != 'NEUTRAL').mean() * 100),
+        'positive_ratio': float((sentiment_df['ensemble_label'] == 'POSITIVE').mean() * 100),
+        'negative_ratio': float((sentiment_df['ensemble_label'] == 'NEGATIVE').mean() * 100),
+        'neutral_ratio': float((sentiment_df['ensemble_label'] == 'NEUTRAL').mean() * 100)
     }
     
     # By bank
     aggregations['by_bank'] = {}
     for bank in sentiment_df['bank'].unique():
         bank_data = sentiment_df[sentiment_df['bank'] == bank]
-        aggregations['by_bank'][bank] = {
-            'total_reviews': len(bank_data),
-            'avg_positive_score': bank_data['ensemble_positive'].mean(),
-            'avg_negative_score': bank_data['ensemble_negative'].mean(),
-            'positive_ratio': (bank_data['ensemble_label'] == 'POSITIVE').mean() * 100,
-            'negative_ratio': (bank_data['ensemble_label'] == 'NEGATIVE').mean() * 100
+        aggregations['by_bank'][str(bank)] = {
+            'total_reviews': int(len(bank_data)),
+            'avg_positive_score': float(bank_data['ensemble_positive'].mean()),
+            'avg_negative_score': float(bank_data['ensemble_negative'].mean()),
+            'positive_ratio': float((bank_data['ensemble_label'] == 'POSITIVE').mean() * 100),
+            'negative_ratio': float((bank_data['ensemble_label'] == 'NEGATIVE').mean() * 100)
         }
     
     # By rating
     aggregations['by_rating'] = {}
     for rating in sorted(sentiment_df['rating'].unique()):
         rating_data = sentiment_df[sentiment_df['rating'] == rating]
-        aggregations['by_rating'][rating] = {
-            'total_reviews': len(rating_data),
-            'avg_positive_score': rating_data['ensemble_positive'].mean(),
-            'avg_negative_score': rating_data['ensemble_negative'].mean(),
-            'avg_distilbert_confidence': rating_data['distilbert_confidence'].mean()
+        aggregations['by_rating'][str(int(rating))] = {
+            'total_reviews': int(len(rating_data)),
+            'avg_positive_score': float(rating_data['ensemble_positive'].mean()),
+            'avg_negative_score': float(rating_data['ensemble_negative'].mean()),
+            'avg_distilbert_confidence': float(rating_data['distilbert_confidence'].mean())
         }
     
     return aggregations

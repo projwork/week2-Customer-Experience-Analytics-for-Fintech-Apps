@@ -359,7 +359,7 @@ class ThematicAnalyzer:
             )
             
             results[bank] = {
-                'total_reviews': len(bank_data),
+                'total_reviews': int(len(bank_data)),
                 'keywords': combined_keywords,
                 'theme_assignments': theme_assignments,
                 'theme_statistics': theme_stats,
@@ -439,10 +439,10 @@ class ThematicAnalyzer:
             )
             
             theme_stats[theme] = {
-                'keyword_count': len(keywords),
-                'total_frequency': total_frequency,
-                'mention_count': mentions,
-                'coverage_percentage': theme_coverage,
+                'keyword_count': int(len(keywords)),
+                'total_frequency': int(total_frequency),
+                'mention_count': int(mentions),
+                'coverage_percentage': float(theme_coverage),
                 'top_keywords': sorted(keywords, key=lambda k: 
                     theme_assignments['keyword_themes'].get(k, {}).get('frequency', 0),
                     reverse=True)[:10]
@@ -605,20 +605,20 @@ def generate_thematic_summary(thematic_results):
         all_themes.update(themes)
     
     summary['overall_statistics'] = {
-        'total_reviews_analyzed': total_reviews,
-        'total_banks': len(thematic_results),
-        'unique_themes_identified': len(all_themes),
-        'themes_per_bank_avg': len(all_themes) / len(thematic_results) if thematic_results else 0
+        'total_reviews_analyzed': int(total_reviews),
+        'total_banks': int(len(thematic_results)),
+        'unique_themes_identified': int(len(all_themes)),
+        'themes_per_bank_avg': float(len(all_themes) / len(thematic_results) if thematic_results else 0)
     }
     
     # Bank comparisons
     for bank, bank_data in thematic_results.items():
         top_themes = bank_data.get('top_themes', [])
-        summary['bank_comparisons'][bank] = {
-            'total_reviews': bank_data['total_reviews'],
-            'themes_identified': len(bank_data.get('theme_statistics', {})),
-            'top_theme': top_themes[0][0] if top_themes else 'None',
-            'top_theme_frequency': top_themes[0][1]['total_frequency'] if top_themes else 0
+        summary['bank_comparisons'][str(bank)] = {
+            'total_reviews': int(bank_data['total_reviews']),
+            'themes_identified': int(len(bank_data.get('theme_statistics', {}))),
+            'top_theme': str(top_themes[0][0]) if top_themes else 'None',
+            'top_theme_frequency': int(top_themes[0][1]['total_frequency']) if top_themes else 0
         }
     
     # Theme insights across all banks
