@@ -37,7 +37,7 @@ def scrape_single_app_reviews(app_name, app_config, min_reviews=400):
     bank_name = app_config['bank_name']
     
     logging.info(f"Fetching reviews for {app_name} ({app_id})...")
-    
+
     try:
         # Try to get more reviews initially to account for potential restrictions
         initial_count = max(min_reviews * 2, 1000)  # Start with double the minimum or 1000
@@ -50,7 +50,7 @@ def scrape_single_app_reviews(app_name, app_config, min_reviews=400):
             count=initial_count,
             filter_score_with=None
         )
-        
+
         # If we got fewer than minimum, try different approaches
         if len(results) < min_reviews:
             logging.warning(f"Only got {len(results)} reviews for {app_name}, trying different sort...")
@@ -88,11 +88,11 @@ def scrape_single_app_reviews(app_name, app_config, min_reviews=400):
         filename = f'data/{app_name.replace(" ", "_")}_reviews_{timestamp}.csv'
         
         ensure_data_folder()
-        
+
         with open(filename, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.DictWriter(file, fieldnames=['review_text', 'rating', 'date', 'bank_name', 'source', 'app_id'])
             writer.writeheader()
-            
+
             for entry in results:
                 writer.writerow({
                     'review_text': entry['content'],
@@ -102,7 +102,7 @@ def scrape_single_app_reviews(app_name, app_config, min_reviews=400):
                     'source': 'Google Play',
                     'app_id': app_id
                 })
-        
+
         logging.info(f"Saved {len(results)} reviews for {app_name} to {filename}")
         return len(results)
         
